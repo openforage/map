@@ -56,6 +56,8 @@ jobs:
       - run: |
           mkdir -p ./repo/static/
           cp ./data/high_lakes_plants_flattened.json ./repo/static/high_lakes_plants_flattened.json
+          ls -lah ./repo
+          ls -lah ./repo/static/
   
       - name: Setup Pages
         id: pages
