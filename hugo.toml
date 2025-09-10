@@ -1,4 +1,4 @@
-baseURL = "https://your-github-username.github.io/your-repo-name/"
+baseURL = "https://nashicorp.github.io/maps/"
 languageCode = "en-us"
 title = "High Lakes Data Map"
 theme = "minimal"
