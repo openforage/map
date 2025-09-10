@@ -52,6 +52,7 @@ jobs:
           repository: nashicorp/wdfw-high-lakes-history
           ref: refs/heads/main
           path: ./data
+
       - run: |
           mkdir -p ./repo/static/
           cp ./data/high_lakes_plants_flattened.json ./repo/static/high_lakes_plants_flattened.json
@@ -59,10 +60,10 @@ jobs:
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
-        with:
-          working-directory: ./repo 
+
       - name: Install Node.js dependencies
         run: "cd ./repo && [[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+ 
       - name: Build with Hugo
         env:
           HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
@@ -71,6 +72,7 @@ jobs:
           cd ./repo && hugo \
             --minify \
             --baseURL "${{ steps.pages.outputs.base_url }}/"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
