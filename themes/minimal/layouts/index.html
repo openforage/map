@@ -20,12 +20,16 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 </head>
 <body>
     <div id="map"></div>
     <script>
         // Initialize the map
-        const map = L.map('map').setView([47.5, -121], 8); // Centered on Washington state
+        const map = L.map('map').setView([47.5, -121], 8);
 
         // Add the base tile layer
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -33,13 +37,16 @@
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Fetch your data and add markers
+        // Create a new marker cluster group layer
+        const markers = L.markerClusterGroup();
+
+        // Fetch your data and add markers to the cluster group
         fetch('https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants_flattened.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(lake => {
                     if (lake.location_lat && lake.location_lon) {
-                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)]).addTo(map);
+                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)]);
 
                         let popupContent = `<b>${lake.name}</b><br>County: ${lake.county}<br>Elevation: ${lake.elevation}`;
                         if (lake.species) {
@@ -47,10 +54,15 @@
                         }
 
                         marker.bindPopup(popupContent);
+                        
+                        // Add the marker to the cluster group instead of the map
+                        markers.addLayer(marker);
                     }
                 });
+
+                // Add the entire cluster group to the map once all markers are loaded
+                map.addLayer(markers);
             })
             .catch(error => console.error('Error fetching data:', error));
     </script>
 </body>
-</html>
