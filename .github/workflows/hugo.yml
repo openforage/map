@@ -39,38 +39,43 @@ jobs:
           && sudo dpkg -i ${{ runner.temp }}/hugo.deb
       - name: Install Dart Sass
         run: sudo snap install dart-sass
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          path: ./repo
   
       - name: Checkout data
         uses: actions/checkout@v4
         with:
           name: nashicorp/wdfw-high-lakes-history
           ref: refs/heads/main
-          path: ${{ runner.workdir }}/wdfw-high-lakes-history
+          path: ./data
       - run: |
-          mkdir -p static/
-          cp ./wdfw-high-lakes-history/high_lakes_plants_flattened.json static/high_lakes_plants_flattened.json
+          mkdir -p ./repo/static/
+          cp ./data/high_lakes_plants_flattened.json ./repo/static/high_lakes_plants_flattened.json
   
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          working-directory: ./repo 
       - name: Install Node.js dependencies
-        run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+        run: "cd ./repo && [[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
       - name: Build with Hugo
         env:
           HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
           HUGO_ENVIRONMENT: production
         run: |
-          hugo \
+          cd ./repo && hugo \
             --minify \
             --baseURL "${{ steps.pages.outputs.base_url }}/"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: ./repo/public
+          
 
   # Deployment job
   deploy:
