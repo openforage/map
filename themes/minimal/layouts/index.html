@@ -34,7 +34,7 @@
         }).addTo(map);
 
         // Fetch your data and add markers
-        fetch('/maps/high_lakes_plants_flattened.json')
+        fetch('https://github.com/nashicorp/wdfw-high-lakes-history/blob/main/high_lakes_plants_flattened.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(lake => {
