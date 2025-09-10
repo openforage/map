@@ -41,7 +41,7 @@
         const markers = L.markerClusterGroup();
 
         // Fetch your data and add markers to the cluster group
-        fetch('https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants_flattened.json')
+        fetch('https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(lake => {
