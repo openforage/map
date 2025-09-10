@@ -1,3 +1,7 @@
-baseURL = 'https://example.org/'
-languageCode = 'en-us'
-title = 'My New Hugo Site'
+baseURL = "https://your-github-username.github.io/your-repo-name/"
+languageCode = "en-us"
+title = "High Lakes Data Map"
+theme = "minimal"
+
+[params]
+  description = "A Leaflet.js map of high lakes data."
