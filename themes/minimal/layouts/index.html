@@ -33,7 +33,9 @@
 
         /* This selector is for the triangle "arrow" on the tooltip */
         .leaflet-tooltip-left:before,
-        .leaflet-tooltip-right:before {
+        .leaflet-tooltip-right:before,
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before {
             border: 0 !important;
         }
     </style>
@@ -47,26 +49,30 @@
     <div id="map"></div>
     <script>
         const map = L.map('map').setView([47.5, -121], 8);
+        // --- CUSTOM ICON DEFINITION ---
+        const redSquareIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red"/></svg>',
+            iconSize: [10, 10],   // Size of the icon
+            iconAnchor: [5, 5]    // Anchor point relative to the icon's top-left corner
+        });
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        const markers = L.markerClusterGroup();
+        const markers = L.layerGroup();
 
         fetch('https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(lake => {
                     if (lake.location_lat && lake.location_lon) {
-                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)]);
-                        
+                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], {icon: redSquareIcon});
+
                         let popupContent = `<b>${lake.name}</b><br>County: ${lake.county}<br>Elevation: ${lake.elevation}`;
-                        if (lake.species) {
-                            popupContent += `<br>Stocked with ${lake.species} on ${lake['Stock Date']}`;
-                        }
+
                         marker.bindPopup(popupContent);
-                        
+
                         marker.bindTooltip(lake.name, {
                             permanent: true,
                             direction: 'top',
