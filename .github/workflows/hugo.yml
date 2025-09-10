@@ -43,6 +43,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+  
+      - name: Checkout data
+        uses: actions/checkout@v4
+        with:
+          name: nashicorp/wdfw-high-lakes-history
+          ref: refs/heads/main
+          path: ${{ runner.workdir }}/wdfw-high-lakes-history
+      - run: |
+          mkdir -p static/
+          cp ./wdfw-high-lakes-history/high_lakes_plants_flattened.json static/high_lakes_plants_flattened.json
+  
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
