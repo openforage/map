@@ -58,6 +58,7 @@
             position: absolute;
             right: 15px;
             top: 60px;
+            width: max-content; /* Adjusted width to be dynamic */
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
             opacity: 0;
             visibility: hidden;
@@ -115,6 +116,32 @@
         .leaflet-popup-content th {
             font-weight: bold;
         }
+
+        /* New CSS for collapsible sections */
+        .collapsible-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background-color: #f0f0f0;
+        }
+        .collapsible-header {
+            cursor: pointer;
+            padding: 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow-y: auto; /* Added for scrollable content */
+            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+            padding: 0 10px;
+        }
+        .collapsible.open .collapsible-content {
+            max-height: 200px; /* Adjusted to a fixed height for scrolling */
+            padding: 10px;
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -132,8 +159,25 @@
         </div>
         <div id="sidebar" class="popover-pane">
             <h2>Map Controls</h2>
-            <div id="year-filters">
-                <h4>Stocking Year</h4>
+
+            <!-- Existing Filter by Year section, now collapsible -->
+            <div class="collapsible collapsible-container">
+                <div class="collapsible-header">
+                    <h4>Stocking Year</h4>
+                </div>
+                <div id="year-filters" class="collapsible-content">
+                    <!-- Checkboxes will be added here by the script -->
+                </div>
+            </div>
+
+            <!-- New collapsible section for species filter -->
+            <div class="collapsible collapsible-container">
+                <div class="collapsible-header">
+                    <h4>Filter by Species</h4>
+                </div>
+                <div id="species-filters" class="collapsible-content">
+                    <!-- Species checkboxes will be added here by the script -->
+                </div>
             </div>
         </div>
     </div>
@@ -170,9 +214,18 @@
 
         const hamburgerMenu = document.getElementById('hamburger-menu');
         const sidebar = document.getElementById('sidebar');
+        const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
 
         hamburgerMenu.addEventListener('click', () => {
             sidebar.classList.toggle('active');
+        });
+
+        // Event listener for each collapsible section
+        collapsibleHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const parent = header.closest('.collapsible');
+                parent.classList.toggle('open');
+            });
         });
 
         const map = L.map('map', {
@@ -212,18 +265,29 @@
             }
 
             const selectedYears = Array.from(document.querySelectorAll('#year-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedSpecies = Array.from(document.querySelectorAll('#species-filters input[type="checkbox"]:checked')).map(cb => cb.value);
 
             const filteredData = allLakesData.filter(lake => {
+                let passesYearFilter = false;
                 if (selectedYears.length === 0) {
-                    return true;
-                }
-                if (lake.plants && lake.plants.length > 0) {
-                    return lake.plants.some(plant => {
+                    passesYearFilter = true;
+                } else {
+                    passesYearFilter = lake.plants && lake.plants.some(plant => {
                         const year = new Date(plant['Stock Date']).getFullYear().toString();
                         return selectedYears.includes(year);
                     });
                 }
-                return false;
+
+                let passesSpeciesFilter = false;
+                if (selectedSpecies.length === 0) {
+                    passesSpeciesFilter = true;
+                } else {
+                    passesSpeciesFilter = lake.plants && lake.plants.some(plant => {
+                        return selectedSpecies.includes(plant['Species']);
+                    });
+                }
+                
+                return passesYearFilter && passesSpeciesFilter;
             });
 
             filteredData.forEach(lake => {
@@ -287,24 +351,31 @@
             }
         }
 
-        fetch('high_lakes_plants.json')
+        fetch('https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants.json')
             .then(response => response.json())
             .then(data => {
                 allLakesData = data;
 
                 const years = new Set();
+                const species = new Set();
+
                 data.forEach(lake => {
                     if (lake.plants) {
                         lake.plants.forEach(plant => {
                             if (plant['Stock Date']) {
                                 years.add(new Date(plant['Stock Date']).getFullYear());
                             }
+                            if (plant['Species']) {
+                                species.add(plant['Species']);
+                            }
                         });
                     }
                 });
                 const sortedYears = Array.from(years).sort((a, b) => b - a);
+                const sortedSpecies = Array.from(species).sort();
 
-                const filtersDiv = document.getElementById('year-filters');
+                // Populate Year filters
+                const yearsFiltersDiv = document.getElementById('year-filters');
                 sortedYears.forEach(year => {
                     const label = document.createElement('label');
                     const checkbox = document.createElement('input');
@@ -312,9 +383,22 @@
                     checkbox.value = year;
                     label.appendChild(checkbox);
                     label.appendChild(document.createTextNode(year));
-                    filtersDiv.appendChild(label);
-                    filtersDiv.appendChild(document.createElement('br'));
+                    yearsFiltersDiv.appendChild(label);
+                    yearsFiltersDiv.appendChild(document.createElement('br'));
+                    checkbox.addEventListener('change', renderFilteredMarkers);
+                });
 
+                // Populate Species filters
+                const speciesFiltersDiv = document.getElementById('species-filters');
+                sortedSpecies.forEach(speciesName => {
+                    const label = document.createElement('label');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = speciesName;
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(speciesName));
+                    speciesFiltersDiv.appendChild(label);
+                    speciesFiltersDiv.appendChild(document.createElement('br'));
                     checkbox.addEventListener('change', renderFilteredMarkers);
                 });
 
