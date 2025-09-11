@@ -11,16 +11,12 @@
             width: 100%;
         }
 
-        /* This is the key change to fix the notch issue */
         body {
-            /* Pushes the content to fill the entire viewport, including under the notch */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-
-            /* Uses CSS env() variables to add padding for the safe area */
             padding-top: env(safe-area-inset-top);
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
@@ -28,7 +24,6 @@
         }
 
         #map {
-            /* The map now fills the entire, full-screen body */
             height: 100%;
             width: 100%;
         }
@@ -38,7 +33,6 @@
             top: 0;
             right: 0;
             z-index: 1000;
-            /* Adjust position relative to the safe area */
             top: env(safe-area-inset-top);
             right: env(safe-area-inset-right);
         }
@@ -158,7 +152,6 @@
 
         function hideOverlappingTooltips() {
             var rects = [];
-            // Target your specific tooltip class 'lake-label'
             var tooltips = document.getElementsByClassName('lake-label');
             for (var i = 0; i < tooltips.length; i++) {
                 tooltips[i].style.visibility = '';
@@ -173,6 +166,11 @@
                     }
                 }
             }
+        }
+
+        // New function to detect if the user is on a mobile device
+        function isMobileDevice() {
+            return window.innerWidth <= 768; // Or use a user-agent check for more specific cases
         }
 
         const hamburgerMenu = document.getElementById('hamburger-menu');
@@ -195,11 +193,16 @@
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         }).addTo(map);
 
-        const markers = L.layerGroup();
+        let markers; // Declare outside of fetch block
         let allLakesData = [];
 
         function renderFilteredMarkers() {
-            markers.clearLayers();
+            // Re-initialize the marker layer for each render
+            if (isMobileDevice()) {
+                markers = L.markerClusterGroup();
+            } else {
+                markers = L.layerGroup();
+            }
 
             const selectedYears = Array.from(document.querySelectorAll('#year-filters input[type="checkbox"]:checked')).map(cb => cb.value);
 
@@ -262,10 +265,17 @@
                     markers.addLayer(marker);
                 }
             });
+
+            // Clear and then add the new markers to the map
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker || layer instanceof L.MarkerClusterGroup) {
+                    map.removeLayer(layer);
+                }
+            });
             map.addLayer(markers);
 
-            // Only call the function on mobile devices
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // Only run the overlapping tooltip logic for non-mobile (non-clustered) views
+            if (isMobileDevice()) {
                 hideOverlappingTooltips();
             }
         }
@@ -304,10 +314,10 @@
                 renderFilteredMarkers();
             })
             .catch(error => console.error('Error fetching data:', error));
-        // Call the function on 'zoomend' events
+
         map.on('zoomend', function(evt) {
-            // Only call the function on mobile devices
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // Only run the overlapping tooltip logic for non-mobile (non-clustered) views
+            if (!isMobileDevice()) {
                 hideOverlappingTooltips();
             }
         });
