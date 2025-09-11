@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{ .Site.Title }}</title>
     <style>
-        html, body {
+        html, body, #map {
             height: 100%;
             margin: 0;
-            width: 100%;
+            width: 100vw;
         }
 
         body {
@@ -21,11 +21,6 @@
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
-        }
-
-        #map {
-            height: 100%;
-            width: 100%;
         }
 
         .controls-container {
@@ -180,7 +175,12 @@
             sidebar.classList.toggle('active');
         });
 
-        const map = L.map('map').setView([47.5, -121], 8);
+        const map = L.map('map', {
+            fullscreenControl: true,
+            fullscreenControlOptions: {
+                pseudoFullscreen: true // Use pseudo-fullscreen for better iOS compatibility
+            }
+        }).setView([47.5, -121], 8);
 
         // Adjust icon size based on device
         const iconSize = isMobileDevice() ? [10, 10] : [5, 5];
