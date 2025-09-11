@@ -11,7 +11,54 @@
             width: 100%;
         }
 
-        /* Corrected and more specific CSS for the tooltips */
+        .controls-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .hamburger {
+            cursor: pointer;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            margin: 15px;
+            display: inline-block;
+        }
+        .hamburger-icon {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background-color: black;
+            margin: 5px 0;
+            transition: background-color 0.3s;
+        }
+
+        /* The key change: removed the fixed width */
+        .popover-pane {
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            position: absolute;
+            right: 15px;
+            top: 60px;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .popover-pane.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .popover-pane h2 {
+            margin-top: 0;
+        }
+
         .leaflet-tooltip.lake-label {
             background-color: transparent !important;
             border: none !important;
@@ -26,14 +73,7 @@
                 1px -1px 0 #FFF,
                 -1px 1px 0 #FFF,
                 1px 1px 0 #FFF;
-            /* Make the tooltip's cursor a pointer to indicate clickability */
             cursor: pointer;
-        }
-        
-        /* Ensure the link inside the tooltip is styled correctly if it were a link */
-        .leaflet-tooltip.lake-label a {
-            color: black;
-            text-decoration: none;
         }
 
         .leaflet-tooltip-left:before,
@@ -43,7 +83,6 @@
             border: 0 !important;
         }
 
-        /* Styles for the popup tables */
         .leaflet-popup-content table {
             font-size: 12px;
             border-collapse: collapse;
@@ -67,31 +106,26 @@
 </head>
 <body>
     <div id="map"></div>
+    <div class="controls-container">
+        <div class="hamburger" id="hamburger-menu">
+            <span class="hamburger-icon"></span>
+            <span class="hamburger-icon"></span>
+            <span class="hamburger-icon"></span>
+        </div>
+        <div id="sidebar" class="popover-pane">
+            <h2>Map Controls</h2>
+            <div id="year-filters">
+                <h4>Stocking Year</h4>
+            </div>
+        </div>
+    </div>
     <script>
-        function overlap(rect1, rect2) {
-            return (!(rect1.right < rect2.left ||
-                    rect1.left > rect2.right ||
-                    rect1.bottom < rect2.top ||
-                    rect1.top > rect2.bottom));
-        }
+        const hamburgerMenu = document.getElementById('hamburger-menu');
+        const sidebar = document.getElementById('sidebar');
 
-        function hideOverlappingTooltips() {
-            var rects = [];
-            var tooltips = document.getElementsByClassName('lake-label');
-            for (var i = 0; i < tooltips.length; i++) {
-                tooltips[i].style.visibility = '';
-                rects[i] = tooltips[i].getBoundingClientRect();
-            }
-            for (var i = 0; i < tooltips.length; i++) {
-                if (tooltips[i].style.visibility !== 'hidden') {
-                    for (var j = i + 1; j < tooltips.length; j++) {
-                        if (overlap(rects[i], rects[j])) {
-                            tooltips[j].style.visibility = 'hidden';
-                        }
-                    }
-                }
-            }
-        }
+        hamburgerMenu.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
 
         const map = L.map('map').setView([47.5, -121], 8);
 
@@ -107,67 +141,109 @@
         }).addTo(map);
 
         const markers = L.layerGroup();
+        let allLakesData = [];
+
+        function renderFilteredMarkers() {
+            markers.clearLayers();
+
+            const selectedYears = Array.from(document.querySelectorAll('#year-filters input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            const filteredData = allLakesData.filter(lake => {
+                if (selectedYears.length === 0) {
+                    return true;
+                }
+                if (lake.plants && lake.plants.length > 0) {
+                    return lake.plants.some(plant => {
+                        const year = new Date(plant['Stock Date']).getFullYear().toString();
+                        return selectedYears.includes(year);
+                    });
+                }
+                return false;
+            });
+
+            filteredData.forEach(lake => {
+                if (lake.location_lat && lake.location_lon) {
+                    const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], { icon: redSquareIcon });
+
+                    let popupContent = `
+                        <h4>${lake.name}</h4>
+                        <table>
+                            <tr><th>Acreage</th><td>${lake.acres}</td></tr>
+                            <tr><th>Elevation</th><td>${lake.elevation}</td></tr>
+                            <tr><th>County</th><td>${lake.county}</td></tr>
+                        </table>
+                        <a href="${lake.url}" target="_blank">View lake page</a>
+                    `;
+
+                    if (lake.plants && lake.plants.length > 0) {
+                        popupContent += `<hr><h5>Recent Stocking Events</h5><table><thead><tr><th>Date</th><th>Species</th><th>Count</th><th>Fish/Pound</th></tr></thead><tbody>`;
+                        lake.plants.forEach(plant => {
+                            popupContent += `
+                                <tr>
+                                    <td>${plant['Stock Date'] || 'N/A'}</td>
+                                    <td>${plant['Species'] || 'N/A'}</td>
+                                    <td>${plant['Number Released'] || 'N/A'}</td>
+                                    <td>${plant['Number of Fish Per Pound'] || 'N/A'}</td>
+                                </tr>
+                            `;
+                        });
+                        popupContent += `</tbody></table>`;
+                    } else {
+                        popupContent += `<hr>No recent stocking data found.`;
+                    }
+
+                    marker.bindPopup(popupContent);
+
+                    const tooltip = marker.bindTooltip(lake.name, {
+                        permanent: true,
+                        direction: 'top',
+                        className: 'lake-label'
+                    });
+
+                    tooltip.on('click', function() {
+                        marker.openPopup();
+                    });
+
+                    markers.addLayer(marker);
+                }
+            });
+            map.addLayer(markers);
+        }
 
         fetch('high_lakes_plants.json')
             .then(response => response.json())
             .then(data => {
+                allLakesData = data;
+
+                const years = new Set();
                 data.forEach(lake => {
-                    if (lake.location_lat && lake.location_lon) {
-                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], { icon: redSquareIcon });
-
-                        let popupContent = `
-                            <h4>${lake.name}</h4>
-                            <table>
-                                <tr><th>Acreage</th><td>${lake.acres}</td></tr>
-                                <tr><th>Elevation</th><td>${lake.elevation}</td></tr>
-                                <tr><th>County</th><td>${lake.county}</td></tr>
-                            </table>
-                            <a href="${lake.url}" target="_blank">View lake page</a>
-                        `;
-
-                        if (lake.plants && lake.plants.length > 0) {
-                            popupContent += `<hr><h5>Recent Stocking Events</h5><table><thead><tr><th>Date</th><th>Species</th><th>Count</th><th>Fish/Pound</th></tr></thead><tbody>`;
-                            lake.plants.forEach(plant => {
-                                popupContent += `
-                                    <tr>
-                                        <td>${plant['Stock Date'] || 'N/A'}</td>
-                                        <td>${plant['Species'] || 'N/A'}</td>
-                                        <td>${plant['Number Released'] || 'N/A'}</td>
-                                        <td>${plant['Number of Fish Per Pound'] || 'N/A'}</td>
-                                    </tr>
-                                `;
-                            });
-                            popupContent += `</tbody></table>`;
-                        } else {
-                            popupContent += `<hr>No recent stocking data found.`;
-                        }
-
-                        marker.bindPopup(popupContent);
-
-                        // The tooltip content is now a simple string
-                        const tooltip = marker.bindTooltip(lake.name, {
-                            permanent: true,
-                            direction: 'top',
-                            className: 'lake-label'
+                    if (lake.plants) {
+                        lake.plants.forEach(plant => {
+                            if (plant['Stock Date']) {
+                                years.add(new Date(plant['Stock Date']).getFullYear());
+                            }
                         });
-
-                        // Add a click listener to the tooltip's DOM element
-                        tooltip.on('click', function() {
-                            marker.openPopup();
-                        });
-
-                        markers.addLayer(marker);
                     }
                 });
-                map.addLayer(markers);
+                const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-                hideOverlappingTooltips();
+                const filtersDiv = document.getElementById('year-filters');
+                sortedYears.forEach(year => {
+                    const label = document.createElement('label');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = year;
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(year));
+                    filtersDiv.appendChild(label);
+                    filtersDiv.appendChild(document.createElement('br'));
+
+                    checkbox.addEventListener('change', renderFilteredMarkers);
+                });
+
+                renderFilteredMarkers();
             })
             .catch(error => console.error('Error fetching data:', error));
-
-        map.on('zoomend', function(evt) {
-            hideOverlappingTooltips();
-        });
     </script>
 </body>
 </html>
