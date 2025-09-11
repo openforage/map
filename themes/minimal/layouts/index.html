@@ -85,7 +85,7 @@
 
         const markers = L.layerGroup();
 
-        fetch('https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes.json')
+        fetch('/data/high_lakes_plants.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(lake => {
