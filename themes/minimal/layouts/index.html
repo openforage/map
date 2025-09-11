@@ -72,10 +72,6 @@
             var tooltips = document.getElementsByClassName('lake-label');
             for (var i = 0; i < tooltips.length; i++) {
                 tooltips[i].style.visibility = '';
-                tooltips[i].style.pointerEvents = 'auto'
-                tooltips[i].addEventListener('click', function() {
-                   console.log("click");
-                });
                 rects[i] = tooltips[i].getBoundingClientRect();
             }
             for (var i = 0; i < tooltips.length; i++) {
@@ -111,7 +107,6 @@
                     if (lake.location_lat && lake.location_lon) {
                         const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], { icon: redSquareIcon });
 
-                        // Begin building popup content with a table for lake info
                         let popupContent = `
                             <h4>${lake.name}</h4>
                             <table>
@@ -122,22 +117,20 @@
                             <a href="${lake.url}" target="_blank">View lake page</a>
                         `;
 
-                        // Check if plants data exists and is not empty
                         if (lake.plants && lake.plants.length > 0) {
-                            // Add a separator and a heading for stocking data
-                            popupContent += `<hr><h5>Recent Stocking Events</h5><table><thead><tr><th>Date</th><th>Species</th><th>Count</th></tr></thead><tbody>`;
+                            // The key change is here: adding a new column to the header and the data rows
+                            popupContent += `<hr><h5>Recent Stocking Events</h5><table><thead><tr><th>Date</th><th>Species</th><th>Count</th><th>Fish/Pound</th></tr></thead><tbody>`;
 
-                            // Build a row for each stocking event
                             lake.plants.forEach(plant => {
                                 popupContent += `
                                     <tr>
                                         <td>${plant['Stock Date'] || 'N/A'}</td>
                                         <td>${plant['Species'] || 'N/A'}</td>
                                         <td>${plant['Number Released'] || 'N/A'}</td>
+                                        <td>${plant['Number of Fish Per Pound'] || 'N/A'}</td>
                                     </tr>
                                 `;
                             });
-                            // End the table HTML
                             popupContent += `</tbody></table>`;
                         } else {
                             popupContent += `<hr>No recent stocking data found.`;
