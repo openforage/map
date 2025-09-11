@@ -72,6 +72,7 @@
             var tooltips = document.getElementsByClassName('lake-label');
             for (var i = 0; i < tooltips.length; i++) {
                 tooltips[i].style.visibility = '';
+                tooltips[i].style.pointerEvents = 'auto'
                 rects[i] = tooltips[i].getBoundingClientRect();
             }
             for (var i = 0; i < tooltips.length; i++) {
