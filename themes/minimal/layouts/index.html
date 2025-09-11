@@ -13,7 +13,6 @@
 
         /* Corrected and more specific CSS for the tooltips */
         .leaflet-tooltip.lake-label {
-            /* Remove background and box */
             background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
@@ -22,8 +21,6 @@
             font-size: 12px;
             color: black;
             white-space: nowrap;
-
-            /* Add white outline for readability */
             text-shadow:
                 -1px -1px 0 #FFF,
                 1px -1px 0 #FFF,
@@ -31,7 +28,6 @@
                 1px 1px 0 #FFF;
         }
 
-        /* This selector is for the triangle "arrow" on the tooltip */
         .leaflet-tooltip-left:before,
         .leaflet-tooltip-right:before,
         .leaflet-tooltip-top:before,
@@ -48,13 +44,40 @@
 <body>
     <div id="map"></div>
     <script>
+        function overlap(rect1, rect2) {
+            return (!(rect1.right < rect2.left ||
+                    rect1.left > rect2.right ||
+                    rect1.bottom < rect2.top ||
+                    rect1.top > rect2.bottom));
+        }
+
+        function hideOverlappingTooltips() {
+            var rects = [];
+            // Target your specific tooltip class 'lake-label'
+            var tooltips = document.getElementsByClassName('lake-label');
+            for (var i = 0; i < tooltips.length; i++) {
+                tooltips[i].style.visibility = '';
+                rects[i] = tooltips[i].getBoundingClientRect();
+            }
+            for (var i = 0; i < tooltips.length; i++) {
+                if (tooltips[i].style.visibility !== 'hidden') {
+                    for (var j = i + 1; j < tooltips.length; j++) {
+                        if (overlap(rects[i], rects[j])) {
+                            tooltips[j].style.visibility = 'hidden';
+                        }
+                    }
+                }
+            }
+        }
+
         const map = L.map('map').setView([47.5, -121], 8);
-        // --- CUSTOM ICON DEFINITION ---
+
         const redSquareIcon = L.icon({
             iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red"/></svg>',
-            iconSize: [10, 10],   // Size of the icon
-            iconAnchor: [5, 5]    // Anchor point relative to the icon's top-left corner
+            iconSize: [10, 10],
+            iconAnchor: [5, 5]
         });
+
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -67,10 +90,8 @@
             .then(data => {
                 data.forEach(lake => {
                     if (lake.location_lat && lake.location_lon) {
-                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], {icon: redSquareIcon});
-
+                        const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], { icon: redSquareIcon });
                         let popupContent = `<b>${lake.name}</b><br>County: ${lake.county}<br>Elevation: ${lake.elevation}`;
-
                         marker.bindPopup(popupContent);
 
                         marker.bindTooltip(lake.name, {
@@ -83,7 +104,16 @@
                     }
                 });
                 map.addLayer(markers);
+
+                // Call the function once after the markers are added
+                hideOverlappingTooltips();
             })
             .catch(error => console.error('Error fetching data:', error));
+
+        // Call the function on 'zoomend' events
+        map.on('zoomend', function(evt) {
+            hideOverlappingTooltips();
+        });
     </script>
 </body>
+</html>
