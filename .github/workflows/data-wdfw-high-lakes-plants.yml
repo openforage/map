@@ -18,8 +18,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Get high lakes plants json
+        working-directory: ./themes/minimal/static
         run: |
-          mkdir -p data && cd data
           curl -OL https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants.json
 
       # Step 5: Commit and push changes if the data has been updated.
