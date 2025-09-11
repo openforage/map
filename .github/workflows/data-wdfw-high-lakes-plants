@@ -1,0 +1,34 @@
+name: Get WDFW high lakes plants
+on:
+  # This section defines the trigger for the workflow.
+  # The 'schedule' trigger uses cron syntax to run the job at a specific time.
+  # This example runs daily at 01:00 UTC.
+  schedule:
+    - cron: '0 1 * * *'
+
+  # The 'workflow_dispatch' trigger allows you to manually run the workflow from the GitHub UI.
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Check out the repository code. This makes your files available to the workflow.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get high lakes plants json
+        run: |
+          mkdir -p data && cd data
+          curl -OL https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants.json
+
+      # Step 5: Commit and push changes if the data has been updated.
+      # This is the core of Git Scraping. It automatically commits the new data file
+      # only if its content has changed.
+      - name: Commit and push if content has changed
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: 'GitHub Actions'
+          author_email: 'actions@github.com'
+          message: '${{ env.date }}: Updated WDFW high lakes plants'
+          add: '*.json'
