@@ -2,29 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .Site.Title }}</title>
     <style>
-        html, body {
+        html, body, #map {
             height: 100%;
             margin: 0;
-            width: 100%;
-        }
-
-        body {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            padding-top: env(safe-area-inset-top);
-            padding-right: env(safe-area-inset-right);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-        }
-
-        #map {
-            height: 100%;
             width: 100%;
         }
 
@@ -33,8 +16,6 @@
             top: 0;
             right: 0;
             z-index: 1000;
-            top: env(safe-area-inset-top);
-            right: env(safe-area-inset-right);
         }
 
         .hamburger {
@@ -54,12 +35,13 @@
             margin: 5px 0;
             transition: background-color 0.3s;
         }
-
+        
         .popover-pane {
             background-color: #f8f8f8;
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            width: 280px;
             position: absolute;
             right: 15px;
             top: 60px;
@@ -76,7 +58,7 @@
         .popover-pane h2 {
             margin-top: 0;
         }
-
+        
         .leaflet-tooltip.lake-label {
             background-color: transparent !important;
             border: none !important;
@@ -93,12 +75,7 @@
                 1px 1px 0 #FFF;
             cursor: pointer;
         }
-
-        .leaflet-tooltip.lake-label a {
-            color: black;
-            text-decoration: none;
-        }
-
+        
         .leaflet-tooltip-left:before,
         .leaflet-tooltip-right:before,
         .leaflet-tooltip-top:before,
@@ -140,39 +117,16 @@
             <div id="year-filters">
                 <h4>Stocking Year</h4>
             </div>
+            <hr>
+            <h4>Map Options</h4>
+            <div>
+                <label>
+                    <input type="checkbox" id="current-location-toggle"> Show My Location
+                </label>
+            </div>
         </div>
     </div>
     <script>
-        function overlap(rect1, rect2) {
-            return (!(rect1.right < rect2.left ||
-                    rect1.left > rect2.right ||
-                    rect1.bottom < rect2.top ||
-                    rect1.top > rect2.bottom));
-        }
-
-        function hideOverlappingTooltips() {
-            var rects = [];
-            var tooltips = document.getElementsByClassName('lake-label');
-            for (var i = 0; i < tooltips.length; i++) {
-                tooltips[i].style.visibility = '';
-                rects[i] = tooltips[i].getBoundingClientRect();
-            }
-            for (var i = 0; i < tooltips.length; i++) {
-                if (tooltips[i].style.visibility !== 'hidden') {
-                    for (var j = i + 1; j < tooltips.length; j++) {
-                        if (overlap(rects[i], rects[j])) {
-                            tooltips[j].style.visibility = 'hidden';
-                        }
-                    }
-                }
-            }
-        }
-
-        // New function to detect if the user is on a mobile device
-        function isMobileDevice() {
-            return window.innerWidth <= 768; // Or use a user-agent check for more specific cases
-        }
-
         const hamburgerMenu = document.getElementById('hamburger-menu');
         const sidebar = document.getElementById('sidebar');
 
@@ -181,7 +135,8 @@
         });
 
         const map = L.map('map').setView([47.5, -121], 8);
-
+        let currentLocationMarker = null; // Store the location marker here
+        
         const redSquareIcon = L.icon({
             shadowUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6"><rect width="6" height="6" fill="black"/></svg>',
             iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="red"/></svg>',
@@ -193,16 +148,11 @@
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         }).addTo(map);
 
-        let markers; // Declare outside of fetch block
+        const markers = L.layerGroup();
         let allLakesData = [];
 
         function renderFilteredMarkers() {
-            // Re-initialize the marker layer for each render
-            if (isMobileDevice()) {
-                markers = L.markerClusterGroup();
-            } else {
-                markers = L.layerGroup();
-            }
+            markers.clearLayers();
 
             const selectedYears = Array.from(document.querySelectorAll('#year-filters input[type="checkbox"]:checked')).map(cb => cb.value);
 
@@ -265,20 +215,50 @@
                     markers.addLayer(marker);
                 }
             });
-
-            // Clear and then add the new markers to the map
-            map.eachLayer(function(layer) {
-                if (layer instanceof L.Marker || layer instanceof L.MarkerClusterGroup) {
-                    map.removeLayer(layer);
-                }
-            });
             map.addLayer(markers);
+        }
 
-            // Only run the overlapping tooltip logic for non-mobile (non-clustered) views
-            if (isMobileDevice()) {
-                hideOverlappingTooltips();
+        // --- NEW GEOLOCATION FUNCTIONS ---
+        function findAndShowLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const latLng = [lat, lon];
+
+                    // Create the location marker (a blue dot)
+                    currentLocationMarker = L.circleMarker(latLng, {
+                        radius: 8,
+                        color: '#007bff',
+                        fillColor: '#007bff',
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    currentLocationMarker.bindPopup("Your Current Location").openPopup();
+                    map.setView(latLng, 12); // Center the map on the location
+                }, error => {
+                    alert('Error: ' + error.message);
+                });
+            } else {
+                alert('Geolocation is not supported by your browser.');
             }
         }
+        
+        function removeLocationMarker() {
+            if (currentLocationMarker) {
+                map.removeLayer(currentLocationMarker);
+                currentLocationMarker = null;
+            }
+        }
+
+        // --- NEW TOGGLE EVENT LISTENER ---
+        document.getElementById('current-location-toggle').addEventListener('change', (event) => {
+            if (event.target.checked) {
+                findAndShowLocation();
+            } else {
+                removeLocationMarker();
+            }
+        });
 
         fetch('high_lakes_plants.json')
             .then(response => response.json())
@@ -314,13 +294,6 @@
                 renderFilteredMarkers();
             })
             .catch(error => console.error('Error fetching data:', error));
-
-        map.on('zoomend', function(evt) {
-            // Only run the overlapping tooltip logic for non-mobile (non-clustered) views
-            if (!isMobileDevice()) {
-                hideOverlappingTooltips();
-            }
-        });
     </script>
 </body>
 </html>
