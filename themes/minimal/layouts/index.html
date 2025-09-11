@@ -126,11 +126,14 @@
         }
         .collapsible-header {
             cursor: pointer;
-            padding: 10px;
+            padding: 5px 10px; /* Adjusted padding to make it shorter */
             font-weight: bold;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .collapsible-header h4 {
+            margin: 0; /* Removed default h4 margins */
         }
         .collapsible-content {
             max-height: 0;
@@ -335,7 +338,7 @@
                         return selectedSpecies.includes(plant['Species']);
                     });
                 }
-
+                
                 return passesYearFilter && passesSpeciesFilter;
             });
 
@@ -450,7 +453,7 @@
                     speciesFiltersDiv.appendChild(document.createElement('br'));
                     checkbox.addEventListener('change', renderFilteredMarkers);
                 });
-
+                
                 // Handle basemap changes
                 document.querySelectorAll('input[name="basemap"]').forEach(radio => {
                     radio.addEventListener('change', (e) => {
