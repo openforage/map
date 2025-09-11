@@ -26,6 +26,14 @@
                 1px -1px 0 #FFF,
                 -1px 1px 0 #FFF,
                 1px 1px 0 #FFF;
+            /* Make the tooltip's cursor a pointer to indicate clickability */
+            cursor: pointer;
+        }
+        
+        /* Ensure the link inside the tooltip is styled correctly if it were a link */
+        .leaflet-tooltip.lake-label a {
+            color: black;
+            text-decoration: none;
         }
 
         .leaflet-tooltip-left:before,
@@ -118,9 +126,7 @@
                         `;
 
                         if (lake.plants && lake.plants.length > 0) {
-                            // The key change is here: adding a new column to the header and the data rows
                             popupContent += `<hr><h5>Recent Stocking Events</h5><table><thead><tr><th>Date</th><th>Species</th><th>Count</th><th>Fish/Pound</th></tr></thead><tbody>`;
-
                             lake.plants.forEach(plant => {
                                 popupContent += `
                                     <tr>
@@ -138,10 +144,16 @@
 
                         marker.bindPopup(popupContent);
 
-                        marker.bindTooltip(lake.name, {
+                        // The tooltip content is now a simple string
+                        const tooltip = marker.bindTooltip(lake.name, {
                             permanent: true,
                             direction: 'top',
                             className: 'lake-label'
+                        });
+
+                        // Add a click listener to the tooltip's DOM element
+                        tooltip.on('click', function() {
+                            marker.openPopup();
                         });
 
                         markers.addLayer(marker);
