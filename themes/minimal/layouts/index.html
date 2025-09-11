@@ -35,11 +35,12 @@
             border: 0 !important;
         }
 
-        /* Styles for the popup table */
+        /* Styles for the popup tables */
         .leaflet-popup-content table {
             font-size: 12px;
             border-collapse: collapse;
             width: 100%;
+            margin-bottom: 10px;
         }
         .leaflet-popup-content th, .leaflet-popup-content td {
             text-align: left;
@@ -105,23 +106,21 @@
                 data.forEach(lake => {
                     if (lake.location_lat && lake.location_lon) {
                         const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], { icon: redSquareIcon });
-                        
-                        // Construct the popup content string with acreage and a link
+
+                        // Begin building popup content with a table for lake info
                         let popupContent = `
-                            <p>
-                                <b>${lake.name}</b><br>
-                                **Acreage**: ${lake.acres}<br>
-                                **Elevation**: ${lake.elevation}<br>
-                                **County**: ${lake.county}
-                            </p>
-                            <p>
-                                <a href="${lake.url}" target="_blank">View lake page</a>
-                            </p>
+                            <h4>${lake.name}</h4>
+                            <table>
+                                <tr><th>Acreage</th><td>${lake.acres}</td></tr>
+                                <tr><th>Elevation</th><td>${lake.elevation}</td></tr>
+                                <tr><th>County</th><td>${lake.county}</td></tr>
+                            </table>
+                            <a href="${lake.url}" target="_blank">View lake page</a>
                         `;
 
                         // Check if plants data exists and is not empty
                         if (lake.plants && lake.plants.length > 0) {
-                            // Start the table HTML
+                            // Add a separator and a heading for stocking data
                             popupContent += `<hr><h5>Recent Stocking Events</h5><table><thead><tr><th>Date</th><th>Species</th><th>Count</th></tr></thead><tbody>`;
 
                             // Build a row for each stocking event
