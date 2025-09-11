@@ -228,7 +228,7 @@
 
             filteredData.forEach(lake => {
                 if (lake.location_lat && lake.location_lon) {
-                    const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)], { icon: redSquareIcon });
+                    const marker = L.marker([parseFloat(lake.location_lat), parseFloat(lake.location_lon)]); //), { icon: redSquareIcon });
 
                     let popupContent = `
                         <h4>${lake.name}</h4>
