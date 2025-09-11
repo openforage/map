@@ -182,11 +182,15 @@
 
         const map = L.map('map').setView([47.5, -121], 8);
 
+        // Adjust icon size based on device
+        const iconSize = isMobileDevice() ? [10, 10] : [5, 5];
+        const iconAnchor = isMobileDevice() ? [5, 5] : [2.5, 2.5];
+
         const redSquareIcon = L.icon({
             shadowUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6"><rect width="6" height="6" fill="black"/></svg>',
             iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="red"/></svg>',
-            iconSize: [5, 5],
-            iconAnchor: [2.5, 2.5],
+            iconSize: iconSize,
+            iconAnchor: iconAnchor,
         });
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -198,6 +202,9 @@
 
         function renderFilteredMarkers() {
             // Re-initialize the marker layer for each render
+            if (markers) {
+                map.removeLayer(markers);
+            }
             if (isMobileDevice()) {
                 markers = L.markerClusterGroup();
             } else {
@@ -317,7 +324,7 @@
 
         map.on('zoomend', function(evt) {
             // Only run the overlapping tooltip logic for non-mobile (non-clustered) views
-            if (!isMobileDevice()) {
+            if (isMobileDevice()) {
                 hideOverlappingTooltips();
             }
         });
