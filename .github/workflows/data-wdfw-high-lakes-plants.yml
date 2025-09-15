@@ -20,7 +20,7 @@ jobs:
       - name: Get high lakes plants json
         working-directory: ./themes/minimal/static
         run: |
-          curl -OL https://raw.githubusercontent.com/nashicorp/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants.json
+          curl -OL https://raw.githubusercontent.com/openforage/wdfw-high-lakes-history/refs/heads/main/high_lakes_plants.json
 
       # Step 5: Commit and push changes if the data has been updated.
       # This is the core of Git Scraping. It automatically commits the new data file
